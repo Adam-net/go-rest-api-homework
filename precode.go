@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -42,11 +43,77 @@ var tasks = map[string]Task{
 // Ниже напишите обработчики для каждого эндпоинта
 // ...
 
+func getAllTasks(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	taskList := make([]Task, 0, len(tasks))
+	for _, task := range tasks {
+		taskList = append(taskList, task)
+	}
+
+	if err := json.NewEncoder(w).Encode(taskList); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+func createTask(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	var newTask Task
+	if err := json.NewDecoder(r.Body).Decode(&newTask); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if newTask.ID == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	tasks[newTask.ID] = newTask
+	w.WriteHeader(http.StatusCreated)
+}
+
+func getTaskByID(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	id := chi.URLParam(r, "id")
+	task, exists := tasks[id]
+	if !exists {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if err := json.NewEncoder(w).Encode(task); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+func deleteTaskByID(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	id := chi.URLParam(r, "id")
+	delete(tasks, id)
+
+	w.WriteHeader(http.StatusOK)
+
+}
+
 func main() {
+	fmt.Printf("Started...")
+
 	r := chi.NewRouter()
 
 	// здесь регистрируйте ваши обработчики
 	// ...
+	r.Get("/tasks", getAllTasks)
+	r.Post("/tasks", createTask)
+	r.Get("/tasks/{id}", getTaskByID)
+	r.Delete("/tasks/{id}", deleteTaskByID)
 
 	if err := http.ListenAndServe(":8080", r); err != nil {
 		fmt.Printf("Ошибка при запуске сервера: %s", err.Error())
