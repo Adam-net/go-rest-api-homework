@@ -46,12 +46,12 @@ var tasks = map[string]Task{
 func getAllTasks(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	taskList := make([]Task, 0, len(tasks))
-	for _, task := range tasks {
-		taskList = append(taskList, task)
-	}
+	// taskList := make([]Task, 0, len(tasks))
+	// for _, task := range tasks {
+	// 	taskList = append(taskList, task)
+	// }
 
-	if err := json.NewEncoder(w).Encode(taskList); err != nil {
+	if err := json.NewEncoder(w).Encode(tasks); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -82,7 +82,7 @@ func getTaskByID(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	task, exists := tasks[id]
 	if !exists {
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
@@ -97,6 +97,13 @@ func deleteTaskByID(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	id := chi.URLParam(r, "id")
+	
+	task, exists := tasks[id]
+	if !exists {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+	
 	delete(tasks, id)
 
 	w.WriteHeader(http.StatusOK)
