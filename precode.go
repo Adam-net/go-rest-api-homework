@@ -98,7 +98,7 @@ func deleteTaskByID(w http.ResponseWriter, r *http.Request) {
 
 	id := chi.URLParam(r, "id")
 	
-	task, exists := tasks[id]
+	_, exists := tasks[id]
 	if !exists {
 		w.WriteHeader(http.StatusNotFound)
 		return
